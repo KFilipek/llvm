@@ -524,6 +524,7 @@ function(add_libclc_builtin_set)
     return()
   endif()
 
+<<<<<<< HEAD
   # Generate remangled variants if requested
   if( ARG_REMANGLE )
     set( dummy_in ${LIBCLC_OUTPUT_LIBRARY_DIR}/libclc_dummy_in.cc )
@@ -595,11 +596,16 @@ function(add_libclc_builtin_set)
   # Add a test for whether or not the libraries contain unresolved calls which
   # would usually indicate a build problem. Note that we don't perform this
   # test for all libclc targets:
+=======
+  # Add a test for whether or not the libraries contain unresolved functions
+  # which would usually indicate a build problem. Note that we don't perform
+  # this test for all libclc targets:
+>>>>>>> 7d1adab5a6f745f038bc774b8f2c381ae32845e0
   # * nvptx-- targets don't include workitem builtins
   # * clspv targets don't include all OpenCL builtins
   if( NOT ARG_ARCH MATCHES "^(nvptx|clspv)(64)?$" )
-    add_test( NAME external-calls-${obj_suffix}
-      COMMAND ./check_external_calls.sh ${libclc_builtins_lib} ${LLVM_TOOLS_BINARY_DIR}
+    add_test( NAME external-funcs-${obj_suffix}
+      COMMAND ./check_external_funcs.sh ${libclc_builtins_lib} ${LLVM_TOOLS_BINARY_DIR}
       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} )
   endif()
 
