@@ -1753,9 +1753,16 @@ UR_APIEXPORT ur_result_t UR_APICALL urDeviceGetGlobalTimestamps(
   oclv::OpenCLVersion DevVer, PlatVer;
   cl_device_id DeviceId = hDevice->CLDevice;
 
+  std::map<cl_int, ur_result_t> CustomErrMap{
+    {CL_INVALID_OPERATION, UR_RESULT_ERROR_UNSUPPORTED_FEATURE}
+  };
+
   // TODO: Cache OpenCL version for each device and platform
   auto RetErr = hDevice->getDeviceVersion(DevVer);
-  CL_RETURN_ON_FAILURE(RetErr);
+  ur_result_t ur_err = mapCLErrorToUR(static_cast<cl_int>(RetErr), CustomErrMap);
+  if (ur_err != UR_RESULT_SUCCESS) {
+    return ur_err;
+  }
 
   RetErr = hDevice->Platform->getPlatformVersion(PlatVer);
 

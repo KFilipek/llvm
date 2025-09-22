@@ -439,7 +439,7 @@ static ur_result_t getExtFuncFromContext(cl_context Context,
 }
 } // namespace cl_ext
 
-ur_result_t mapCLErrorToUR(cl_int Result);
+ur_result_t mapCLErrorToUR(cl_int Result, const std::map<cl_int, ur_result_t> &Mapping = {});
 
 ur_result_t getNativeHandle(void *URObj, ur_native_handle_t *NativeHandle);
 

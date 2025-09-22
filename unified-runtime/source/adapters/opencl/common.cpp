@@ -27,7 +27,13 @@ thread_local char ErrorMessage[MaxMessageSize]{};
 
 } // namespace cl_adapter
 
-ur_result_t mapCLErrorToUR(cl_int Result) {
+ur_result_t mapCLErrorToUR(cl_int Result, const std::map<cl_int, ur_result_t> &Mapping) {
+  // First check if the error code is in the user-provided mapping.
+  auto it = Mapping.find(Result);
+  if (it != Mapping.end()) {
+    return it->second;
+  }
+
   switch (Result) {
   case CL_SUCCESS:
     return UR_RESULT_SUCCESS;
