@@ -591,13 +591,30 @@ public:
                       ur_event_handle_t hSignalEvent,
                       uint32_t numWaitEvents,
                       ur_event_handle_t *phWaitEvents) override {
-    // discard unused:
-    (void)hExGraph;
-    (void)hSignalEvent;
-    (void)numWaitEvents;
-    (void)phWaitEvents;
-    // TODO: To be implemented
-    return UR_RESULT_ERROR_UNSUPPORTED_FEATURE;
+    if (!this->hDevice->Platform->ZeGraphExt.Supported) {
+      return UR_RESULT_ERROR_UNSUPPORTED_FEATURE;
+    }
+
+    auto cmdList = commandListManager.lock()->getZeCommandList();
+
+    // Convert UR signal event to ZE event handle (or nullptr if not provided)
+    ze_event_handle_t zeSignalEvent = hSignalEvent ? hSignalEvent->getZeEvent() : nullptr;
+
+    // Build array of ZE wait events from UR wait events
+    std::vector<ze_event_handle_t> zeWaitEvents;
+    zeWaitEvents.reserve(numWaitEvents);
+    for (uint32_t i = 0; i < numWaitEvents; ++i) {
+      if (phWaitEvents[i]) {
+        zeWaitEvents.push_back(phWaitEvents[i]->getZeEvent());
+      }
+    }
+
+    ZE2UR_CALL(hContext->getPlatform()->ZeGraphExt.zeCommandListAppendGraphExp,
+               (cmdList, hExGraph->getZeHandle(), nullptr, zeSignalEvent,
+                static_cast<uint32_t>(zeWaitEvents.size()),
+                zeWaitEvents.empty() ? nullptr : zeWaitEvents.data()));
+
+    return UR_RESULT_SUCCESS;
   }
 
   ur_result_t queueIsGraphCapteEnabledExp(bool * pResult) override {
