@@ -617,11 +617,24 @@ public:
     return UR_RESULT_SUCCESS;
   }
 
-  ur_result_t queueIsGraphCapteEnabledExp(bool * pResult) override {
-    // discard unused:
-    (void)pResult;
-    // TODO: To be implemented
-    return UR_RESULT_ERROR_UNSUPPORTED_FEATURE;
+  ur_result_t queueIsGraphCapteEnabledExp(bool *pResult) override {
+    if (!this->hDevice->Platform->ZeGraphExt.Supported) {
+      return UR_RESULT_ERROR_UNSUPPORTED_FEATURE;
+    }
+
+    auto cmdList = commandListManager.lock()->getZeCommandList();
+
+    // zeCommandListIsGraphCaptureEnabledExp returns ZE_RESULT_SUCCESS if
+    // graph capture is enabled, otherwise returns an error code.
+    ze_result_t zeResult = ZE_CALL_NOCHECK(
+        hContext->getPlatform()->ZeGraphExt.zeCommandListIsGraphCaptureEnabledExp,
+        (cmdList));
+
+    if (pResult) {
+      *pResult = (zeResult == ZE_RESULT_SUCCESS);
+    }
+
+    return UR_RESULT_SUCCESS;
   }
 
   ur::RefCount RefCount;

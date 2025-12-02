@@ -77,13 +77,24 @@ ur_result_t urGraphExecutableGraphDestroyExp(
 }
 
 ur_result_t urGraphIsEmptyExp(ur_exp_graph_handle_t hGraph, bool *pIsEmpty) {
-  std::ignore = hGraph;
-  if (pIsEmpty)
-    *pIsEmpty = false;
-  UR_LOG_LEGACY(ERR,
-                logger::LegacyMessage("[UR][L0] {} function not implemented!"),
-                "{} function not implemented!", __FUNCTION__);
-  return UR_RESULT_ERROR_UNSUPPORTED_FEATURE;
+  if (nullptr == hGraph) {
+    return UR_RESULT_ERROR_INVALID_NULL_HANDLE;
+  }
+
+  ur_context_handle_t ctx = hGraph->getContext();
+  if (!ctx->getPlatform()->ZeGraphExt.Supported) {
+    return UR_RESULT_ERROR_UNSUPPORTED_FEATURE;
+  }
+
+  ze_result_t zeResult = ZE_CALL_NOCHECK(
+      ctx->getPlatform()->ZeGraphExt.zeGraphIsEmptyExp,
+      (hGraph->getZeHandle()));
+
+  if (pIsEmpty) {
+    *pIsEmpty = (zeResult == ZE_RESULT_SUCCESS);
+  }
+
+  return UR_RESULT_SUCCESS;
 }
 
 ur_result_t urGraphDumpContentsExp(ur_exp_graph_handle_t hGraph,
