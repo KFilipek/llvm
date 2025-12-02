@@ -597,10 +597,8 @@ public:
 
     auto cmdList = commandListManager.lock()->getZeCommandList();
 
-    // Convert UR signal event to ZE event handle (or nullptr if not provided)
     ze_event_handle_t zeSignalEvent = hSignalEvent ? hSignalEvent->getZeEvent() : nullptr;
 
-    // Build array of ZE wait events from UR wait events
     std::vector<ze_event_handle_t> zeWaitEvents;
     zeWaitEvents.reserve(numWaitEvents);
     for (uint32_t i = 0; i < numWaitEvents; ++i) {
@@ -623,9 +621,6 @@ public:
     }
 
     auto cmdList = commandListManager.lock()->getZeCommandList();
-
-    // zeCommandListIsGraphCaptureEnabledExp returns ZE_RESULT_SUCCESS if
-    // graph capture is enabled, otherwise returns an error code.
     ze_result_t zeResult = ZE_CALL_NOCHECK(
         hContext->getPlatform()->ZeGraphExt.zeCommandListIsGraphCaptureEnabledExp,
         (cmdList));
