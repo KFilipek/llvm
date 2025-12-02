@@ -16,6 +16,7 @@
 #include "context.hpp"
 #include "event.hpp"
 #include "event_pool_cache.hpp"
+#include "graph.hpp"
 #include "memory.hpp"
 #include "queue_api.hpp"
 
@@ -549,28 +550,60 @@ public:
   }
 
   ur_result_t queueBeginGraphCapteExp() override {
-    return UR_RESULT_ERROR_UNSUPPORTED_FEATURE;
+    // TODO: TO VERIFY
+    if(!this->hDevice->Platform->ZeGraphExt.Supported) {
+      return UR_RESULT_ERROR_UNSUPPORTED_FEATURE;
+    } else {
+      auto cmdList = commandListManager.lock()->getZeCommandList();
+      ZE2UR_CALL(hContext->getPlatform()->ZeGraphExt.zeCommandListBeginGraphCaptureExp, (
+        cmdList, nullptr));
+      return UR_RESULT_SUCCESS;
+    }
   }
 
   ur_result_t
-  queueBeginCapteIntoGraphExp(ur_exp_graph_handle_t /* hGraph */) override {
-    return UR_RESULT_ERROR_UNSUPPORTED_FEATURE;
+  queueBeginCapteIntoGraphExp(ur_exp_graph_handle_t hGraph) override {
+    if(!this->hDevice->Platform->ZeGraphExt.Supported) {
+      return UR_RESULT_ERROR_UNSUPPORTED_FEATURE;
+    } else {
+      auto cmdList = commandListManager.lock()->getZeCommandList();
+      ZE2UR_CALL(hContext->getPlatform()->ZeGraphExt.zeCommandListBeginCaptureIntoGraphExp, (
+        cmdList, hGraph->getZeHandle(), nullptr));
+      return UR_RESULT_SUCCESS;
+    }
   }
 
   ur_result_t
-  queueEndGraphCapteExp(ur_exp_graph_handle_t * /* phGraph */) override {
-    return UR_RESULT_ERROR_UNSUPPORTED_FEATURE;
+  queueEndGraphCapteExp(ur_exp_graph_handle_t *phGraph) override {
+    if (!this->hDevice->Platform->ZeGraphExt.Supported) {
+      return UR_RESULT_ERROR_UNSUPPORTED_FEATURE;
+    }
+    else {
+      auto cmdList = commandListManager.lock()->getZeCommandList();
+      ZE2UR_CALL(hContext->getPlatform()->ZeGraphExt.zeCommandListEndGraphCaptureExp, (
+        cmdList, &(*phGraph)->getZeHandle(), nullptr));
+      return UR_RESULT_SUCCESS;
+    }
   }
 
   ur_result_t
-  queueAppendGraphExp(ur_exp_executable_graph_handle_t /* hGraph */,
-                      ur_event_handle_t /* hSignalEvent */,
-                      uint32_t /* numWaitEvents */,
-                      ur_event_handle_t * /* phWaitEvents */) override {
+  queueAppendGraphExp(ur_exp_executable_graph_handle_t hExGraph,
+                      ur_event_handle_t hSignalEvent,
+                      uint32_t numWaitEvents,
+                      ur_event_handle_t *phWaitEvents) override {
+    // discard unused:
+    (void)hExGraph;
+    (void)hSignalEvent;
+    (void)numWaitEvents;
+    (void)phWaitEvents;
+    // TODO: To be implemented
     return UR_RESULT_ERROR_UNSUPPORTED_FEATURE;
   }
 
-  ur_result_t queueIsGraphCapteEnabledExp(bool * /* pResult */) override {
+  ur_result_t queueIsGraphCapteEnabledExp(bool * pResult) override {
+    // discard unused:
+    (void)pResult;
+    // TODO: To be implemented
     return UR_RESULT_ERROR_UNSUPPORTED_FEATURE;
   }
 
