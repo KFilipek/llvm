@@ -60,20 +60,40 @@ ur_result_t urGraphCreateExp(ur_context_handle_t hContext,
 }
 
 ur_result_t urGraphDestroyExp(ur_exp_graph_handle_t hGraph) {
-  std::ignore = hGraph;
-  UR_LOG_LEGACY(ERR,
-                logger::LegacyMessage("[UR][L0] {} function not implemented!"),
-                "{} function not implemented!", __FUNCTION__);
-  return UR_RESULT_ERROR_UNSUPPORTED_FEATURE;
+  if (nullptr == hGraph) {
+    return UR_RESULT_ERROR_INVALID_NULL_HANDLE;
+  }
+
+  ur_context_handle_t ctx = hGraph->getContext();
+  if (!ctx->getPlatform()->ZeGraphExt.Supported) {
+    return UR_RESULT_ERROR_UNSUPPORTED_FEATURE;
+  }
+
+  ZE2UR_CALL(ctx->getPlatform()->ZeGraphExt.zeGraphDestroyExp,
+             (hGraph->getZeHandle()));
+
+  delete hGraph;
+
+  return UR_RESULT_SUCCESS;
 }
 
 ur_result_t urGraphExecutableGraphDestroyExp(
     ur_exp_executable_graph_handle_t hExecutableGraph) {
-  std::ignore = hExecutableGraph;
-  UR_LOG_LEGACY(ERR,
-                logger::LegacyMessage("[UR][L0] {} function not implemented!"),
-                "{} function not implemented!", __FUNCTION__);
-  return UR_RESULT_ERROR_UNSUPPORTED_FEATURE;
+  if (nullptr == hExecutableGraph) {
+    return UR_RESULT_ERROR_INVALID_NULL_HANDLE;
+  }
+
+  ur_context_handle_t ctx = hExecutableGraph->getContext();
+  if (!ctx->getPlatform()->ZeGraphExt.Supported) {
+    return UR_RESULT_ERROR_UNSUPPORTED_FEATURE;
+  }
+
+  ZE2UR_CALL(ctx->getPlatform()->ZeGraphExt.zeExecutableGraphDestroyExp,
+             (hExecutableGraph->getZeHandle()));
+
+  delete hExecutableGraph;
+
+  return UR_RESULT_SUCCESS;
 }
 
 ur_result_t urGraphIsEmptyExp(ur_exp_graph_handle_t hGraph, bool *pIsEmpty) {
