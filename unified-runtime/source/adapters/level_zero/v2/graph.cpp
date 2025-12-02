@@ -99,13 +99,41 @@ ur_result_t urGraphDumpContentsExp(ur_exp_graph_handle_t hGraph,
 ur_result_t urGraphInstantiateGraphExp(
     ur_exp_graph_handle_t hGraph,
     ur_exp_executable_graph_handle_t *phExecutableGraph) {
-  std::ignore = hGraph;
-  if (phExecutableGraph)
-    *phExecutableGraph = nullptr;
-  UR_LOG_LEGACY(ERR,
-                logger::LegacyMessage("[UR][L0] {} function not implemented!"),
-                "{} function not implemented!", __FUNCTION__);
-  return UR_RESULT_ERROR_UNSUPPORTED_FEATURE;
+  try {
+    if (nullptr == hGraph) {
+      return UR_RESULT_ERROR_INVALID_NULL_HANDLE;
+    }
+
+    if (phExecutableGraph)
+      *phExecutableGraph = nullptr;
+
+    ur_context_handle_t ctx = hGraph->getContext();
+    if (!ctx->getPlatform()->ZeGraphExt.Supported) {
+      return UR_RESULT_ERROR_UNSUPPORTED_FEATURE;
+    }
+
+    *phExecutableGraph = new ur_exp_executable_graph_handle_t_(ctx);
+    if (*phExecutableGraph == nullptr) {
+      return UR_RESULT_ERROR_OUT_OF_HOST_MEMORY;
+    }
+
+    ZE2UR_CALL_THROWS(ctx->getPlatform()->ZeGraphExt.zeCommandListInstantiateGraphExp,
+                      (hGraph->getZeHandle(), &(*phExecutableGraph)->getZeHandle(), nullptr));
+
+    return UR_RESULT_SUCCESS;
+  } catch (const ur_result_t &e) {
+    if (phExecutableGraph && *phExecutableGraph) {
+      delete *phExecutableGraph;
+      *phExecutableGraph = nullptr;
+    }
+    return e;
+  } catch (...) {
+    if (phExecutableGraph && *phExecutableGraph) {
+      delete *phExecutableGraph;
+      *phExecutableGraph = nullptr;
+    }
+    return UR_RESULT_ERROR_UNKNOWN;
+  }
 }
 
 } // namespace ur::level_zero

@@ -19,17 +19,18 @@ public:
 
   inline ze_graph_handle_t &getZeHandle() { return hGraph; }
   inline const ze_graph_handle_t &getZeHandle() const { return hGraph; }
+  inline ur_context_handle_t getContext() const { return hContext; }
 private:
   ze_graph_handle_t hGraph;
   ur_context_handle_t hContext;
 };
 
-// Implement: ur_exp_executable_graph_handle_t
 struct ur_exp_executable_graph_handle_t_ : ur_object {
 public:
   ur_exp_executable_graph_handle_t_(ur_context_handle_t hContext) : hExecutableGraph(nullptr), hContext(hContext) {}
   inline ze_executable_graph_handle_t &getZeHandle() { return hExecutableGraph; }
   inline const ze_executable_graph_handle_t &getZeHandle() const { return hExecutableGraph; }
+  inline ur_context_handle_t getContext() const { return hContext; }
 private:
   ze_executable_graph_handle_t hExecutableGraph;
   ur_context_handle_t hContext;
