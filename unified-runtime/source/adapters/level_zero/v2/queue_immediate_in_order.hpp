@@ -577,8 +577,7 @@ public:
   queueEndGraphCapteExp(ur_exp_graph_handle_t *phGraph) override {
     if (!this->hDevice->Platform->ZeGraphExt.Supported) {
       return UR_RESULT_ERROR_UNSUPPORTED_FEATURE;
-    }
-    else {
+    } else {
       auto cmdList = commandListManager.lock()->getZeCommandList();
       ZE2UR_CALL(hContext->getPlatform()->ZeGraphExt.zeCommandListEndGraphCaptureExp, (
         cmdList, &(*phGraph)->getZeHandle(), nullptr));
@@ -597,20 +596,15 @@ public:
 
     auto cmdList = commandListManager.lock()->getZeCommandList();
 
+    // Convert UR signal event to ZE event handle (or nullptr if not provided)
     ze_event_handle_t zeSignalEvent = hSignalEvent ? hSignalEvent->getZeEvent() : nullptr;
 
-    std::vector<ze_event_handle_t> zeWaitEvents;
-    zeWaitEvents.reserve(numWaitEvents);
-    for (uint32_t i = 0; i < numWaitEvents; ++i) {
-      if (phWaitEvents[i]) {
-        zeWaitEvents.push_back(phWaitEvents[i]->getZeEvent());
-      }
-    }
+    // Use wait_list_view to convert UR wait events to ZE event handles
+    wait_list_view waitListView(phWaitEvents, numWaitEvents);
 
     ZE2UR_CALL(hContext->getPlatform()->ZeGraphExt.zeCommandListAppendGraphExp,
                (cmdList, hExGraph->getZeHandle(), nullptr, zeSignalEvent,
-                static_cast<uint32_t>(zeWaitEvents.size()),
-                zeWaitEvents.empty() ? nullptr : zeWaitEvents.data()));
+                waitListView.num, waitListView.handles));
 
     return UR_RESULT_SUCCESS;
   }
