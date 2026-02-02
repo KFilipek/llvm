@@ -69,11 +69,20 @@ target_link_libraries(ur_loader PRIVATE
     ${PROJECT_NAME}::headers
 )
 
+if(UR_STATIC_ADAPTER_L0 OR UR_STATIC_ADAPTER_L0_V2)
+    target_compile_definitions(ur_loader PRIVATE UR_STATIC_ADAPTER_LEVEL_ZERO)
+endif()
+
 if(UR_STATIC_ADAPTER_L0)
     target_link_libraries(ur_loader PRIVATE
         ur_adapter_level_zero
     )
-    target_compile_definitions(ur_loader PRIVATE UR_STATIC_ADAPTER_LEVEL_ZERO)
+endif()
+
+if(UR_STATIC_ADAPTER_L0_V2)
+    target_link_libraries(ur_loader PRIVATE
+        ur_adapter_level_zero_v2
+    )
 endif()
 
 if(UR_ENABLE_TRACING)

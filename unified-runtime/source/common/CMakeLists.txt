@@ -62,7 +62,7 @@ target_include_directories(ur_common PUBLIC
 )
 
 
-if (UR_STATIC_ADAPTER_L0)
+if (UR_STATIC_ADAPTER_L0 OR UR_STATIC_ADAPTER_L0_V2)
     if (UMF_BUILD_SHARED_LIBRARY)
         message(STATUS "Static adapter is not compatible with shared UMF, switching to fully statically linked UMF")
         set(UMF_BUILD_SHARED_LIBRARY OFF)
