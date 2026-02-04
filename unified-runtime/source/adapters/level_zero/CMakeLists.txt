@@ -65,6 +65,7 @@ if(UR_BUILD_ADAPTER_L0)
     target_compile_definitions(ur_adapter_level_zero PUBLIC UR_STATIC_LEVEL_ZERO)
     if(UR_STATIC_ADAPTER_L0)
         target_compile_definitions(ur_adapter_level_zero PUBLIC UR_STATIC_ADAPTER_LEVEL_ZERO)
+        # Always install dependencies from the L0 adapter when it's static
         set(ADAPTER_L0_TARGETS_TO_INSTALL ur_umf LevelZeroLoader LevelZeroLoader-Headers ComputeRuntimeLevelZero-Headers)
         # 'utils' target from 'level-zero-loader' includes path which is prefixed
         # in the source directory, this breaks the installation of 'utils' target.
@@ -211,25 +212,28 @@ if(UR_BUILD_ADAPTER_L0_V2)
 
     target_compile_definitions(ur_adapter_level_zero_v2 PUBLIC UR_STATIC_LEVEL_ZERO)
     target_compile_definitions(ur_adapter_level_zero_v2 PUBLIC UR_ADAPTER_LEVEL_ZERO_V2)
-        if(UR_STATIC_ADAPTER_L0_V2)
-                target_compile_definitions(ur_adapter_level_zero_v2 PUBLIC UR_STATIC_ADAPTER_LEVEL_ZERO)
-                set(ADAPTER_L0_V2_TARGETS_TO_INSTALL ur_umf LevelZeroLoader LevelZeroLoader-Headers ComputeRuntimeLevelZero-Headers)
-                # 'utils' target from 'level-zero-loader' includes path which is prefixed
-                # in the source directory, this breaks the installation of 'utils' target.
-                if(TARGET level_zero_utils)
-                    set_target_properties(level_zero_utils PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "")
-                    list(APPEND ADAPTER_L0_V2_TARGETS_TO_INSTALL level_zero_utils)
-                endif()
-                if(TARGET ze_loader)
-                    list(APPEND ADAPTER_L0_V2_TARGETS_TO_INSTALL ze_loader)
-                endif()
-                install(TARGETS ${ADAPTER_L0_V2_TARGETS_TO_INSTALL}
-                        EXPORT ${PROJECT_NAME}-targets
-                        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-                        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-                        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-                )
+    if(UR_STATIC_ADAPTER_L0_V2)
+        target_compile_definitions(ur_adapter_level_zero_v2 PUBLIC UR_STATIC_ADAPTER_LEVEL_ZERO)
+        # Only install dependencies if L0 adapter is not also static (to avoid duplicates)
+        if(NOT UR_STATIC_ADAPTER_L0)
+            set(ADAPTER_L0_V2_TARGETS_TO_INSTALL ur_umf LevelZeroLoader LevelZeroLoader-Headers ComputeRuntimeLevelZero-Headers)
+            # 'utils' target from 'level-zero-loader' includes path which is prefixed
+            # in the source directory, this breaks the installation of 'utils' target.
+            if(TARGET level_zero_utils)
+              set_target_properties(level_zero_utils PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "")
+              list(APPEND ADAPTER_L0_V2_TARGETS_TO_INSTALL level_zero_utils)
+            endif()
+            if(TARGET ze_loader)
+              list(APPEND ADAPTER_L0_V2_TARGETS_TO_INSTALL ze_loader)
+            endif()
+            install(TARGETS ${ADAPTER_L0_V2_TARGETS_TO_INSTALL}
+                EXPORT ${PROJECT_NAME}-targets
+                ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+                RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+                LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+            )
         endif()
+    endif()
 
     # TODO: fix level_zero adapter conversion warnings
     target_compile_options(ur_adapter_level_zero_v2 PRIVATE
