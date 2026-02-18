@@ -560,7 +560,7 @@ public:
   }
 
   ur_result_t queueIsGraphCapteEnabledExp(bool *pResult) override {
-    return commandListManager.lock()->isGraphCaptureActive(pResult);
+    return commandListManager.lock()->queryGraphCaptureActive(pResult);
   }
 
   ur_result_t

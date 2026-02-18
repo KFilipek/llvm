@@ -259,7 +259,7 @@ struct ur_command_list_manager {
   ur_result_t beginGraphCapture();
   ur_result_t beginCaptureIntoGraph(ur_exp_graph_handle_t hGraph);
   ur_result_t endGraphCapture(ur_exp_graph_handle_t *phGraph);
-  ur_result_t isGraphCaptureActive(bool *pResult);
+  ur_result_t queryGraphCaptureActive(bool *pResult);
 
   v2::raii::command_list_unique_handle &&releaseCommandList();
 
