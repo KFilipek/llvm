@@ -1955,28 +1955,23 @@ ur_device_handle_t_::useImmediateCommandLists() {
   }();
 
   if (ImmediateCommandlistsSetting == -1) {
-    bool isDG2OrNewer = this->isIntelDG2OrNewer();
-    bool isDG2SupportedDriver =
-        this->Platform->isDriverVersionNewerOrSimilar(1, 5, 30820);
-    bool isIntelMTLDevice = this->isIntelMTL();
-    bool isIntelARLDevice = this->isIntelARL();
-    // Disable immediate command lists for DG2 devices on Windows due to driver
-    // limitations.
-    bool isLinux = true;
-#ifdef _WIN32
-    isLinux = false;
-#endif
+#ifndef _WIN32
     // Disable immediate command lists for Intel MTL/ARL devices on Linux by
     // default due to driver limitations.
-    if ((isIntelMTLDevice || isIntelARLDevice) && isLinux) {
+    if (this->isIntelMTL() || this->isIntelARL()) {
       return NotUsed;
     }
-    if ((isDG2SupportedDriver && isDG2OrNewer && isLinux) || isPVC() ||
-        isNewerThanIntelDG2()) {
+    // Immediate command lists for DG2 devices are enabled only on Linux, as
+    // they are disabled on Windows due to driver limitations.
+    if (this->isIntelDG2OrNewer() &&
+        this->Platform->isDriverVersionNewerOrSimilar(1, 5, 30820)) {
       return PerQueue;
-    } else {
-      return NotUsed;
     }
+#endif
+    if (isPVC() || isNewerThanIntelDG2()) {
+      return PerQueue;
+    }
+    return NotUsed;
   }
 
   UR_LOG(INFO, "NOTE: L0 Immediate CommandList Setting: {}",
