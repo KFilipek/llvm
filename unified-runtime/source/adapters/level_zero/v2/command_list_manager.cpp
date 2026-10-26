@@ -249,7 +249,7 @@ ur_result_t ur_command_list_manager::appendKernelLaunchLocked(
 
   UR_CALL(hKernel->prepareForSubmission(
       hContext.get(), hDevice.get(), pGlobalWorkOffset, workDim, WG[0], WG[1],
-      WG[2], getZeCommandList(), waitListView));
+      WG[2], getZeCommandList(), waitListView, !callWithArgs));
 
   if (callWithArgs) {
     // zeCommandListAppendLaunchKernelWithArguments

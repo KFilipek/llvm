@@ -306,7 +306,8 @@ ur_result_t ur_kernel_handle_t_::prepareForSubmission(
     ur_context_handle_t hContext, ur_device_handle_t hDevice,
     const size_t *pGlobalWorkOffset, uint32_t workDim, uint32_t groupSizeX,
     uint32_t groupSizeY, uint32_t groupSizeZ,
-    ze_command_list_handle_t commandList, wait_list_view &waitListView) {
+    ze_command_list_handle_t commandList, wait_list_view &waitListView,
+    bool setGroupSize) {
   auto &deviceKernelOpt = deviceKernels[deviceIndex(hDevice)];
   if (!deviceKernelOpt.has_value())
     return UR_RESULT_ERROR_INVALID_KERNEL;
@@ -318,8 +319,12 @@ ur_result_t ur_kernel_handle_t_::prepareForSubmission(
                                   pGlobalWorkOffset));
   }
 
-  ZE2UR_CALL(zeKernelSetGroupSize,
-             (hZeKernel, groupSizeX, groupSizeY, groupSizeZ));
+  // zeCommandListAppendLaunchKernelWithArguments takes the group size
+  // directly, so setting it on the kernel would be redundant.
+  if (setGroupSize) {
+    ZE2UR_CALL(zeKernelSetGroupSize,
+               (hZeKernel, groupSizeX, groupSizeY, groupSizeZ));
+  }
 
   for (auto &pending : pending_allocations) {
     void *zePtr = nullptr;

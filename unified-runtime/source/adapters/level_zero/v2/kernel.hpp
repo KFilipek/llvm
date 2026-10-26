@@ -112,7 +112,8 @@ public:
                                    uint32_t workDim, uint32_t groupSizeX,
                                    uint32_t groupSizeY, uint32_t groupSizeZ,
                                    ze_command_list_handle_t cmdList,
-                                   wait_list_view &waitListView);
+                                   wait_list_view &waitListView,
+                                   bool setGroupSize = true);
 
   // Get context of the kernel.
   ur_context_handle_t getContext() const { return v2_cast(hProgram->Context); }
