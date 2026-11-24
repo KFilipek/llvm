@@ -60,6 +60,8 @@ add_l0_v2_devices_test(queue_priority
     queue_priority_test.cpp
 )
 
+add_l0_loader_devices_test(graph_external_events graph_external_events.cpp)
+
 # Calls the L0v2 adapter entry points directly, bypassing the UR loader.
 add_gtest_test(adapter_get_no_platforms urAdapterGetNoPlatforms.cpp)
 link_l0_v2_adapter_sources(adapter_get_no_platforms)

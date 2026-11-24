@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 add_conformance_devices_test(exp_graph
+  urEnqueueEventsWaitWithBarrierExtGraphExternal.cpp
   urEnqueueGraphExp.cpp
   urGraphCreateExp.cpp
   urGraphDestroyExp.cpp

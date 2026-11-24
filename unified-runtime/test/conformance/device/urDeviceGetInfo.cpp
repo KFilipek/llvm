@@ -2577,6 +2577,32 @@ TEST_P(urDeviceGetInfoTest, SuccessEnqueueNativeCommandSupport) {
   ASSERT_TRUE(casted_value == false || casted_value == true);
 }
 
+TEST_P(urDeviceGetInfoTest, SuccessGraphExternalEventsSupport) {
+  size_t property_size = 0;
+  const ur_device_info_t property_name =
+      UR_DEVICE_INFO_GRAPH_EXTERNAL_EVENTS_SUPPORT_EXP;
+
+  UUR_ASSERT_SUCCESS_OR_UNSUPPORTED(
+      urDeviceGetInfo(device, property_name, 0, nullptr, &property_size));
+  ASSERT_EQ(property_size, sizeof(ur_bool_t));
+
+  ur_bool_t property_value = false;
+  ASSERT_SUCCESS(urDeviceGetInfo(device, property_name, property_size,
+                                 &property_value, nullptr));
+
+  bool casted_value = static_cast<bool>(property_value);
+  ASSERT_TRUE(casted_value == false || casted_value == true);
+
+  // Graph-external events are a part of graph record and replay.
+  if (casted_value) {
+    ur_bool_t graph_supported = false;
+    ASSERT_SUCCESS(urDeviceGetInfo(
+        device, UR_DEVICE_INFO_GRAPH_RECORD_AND_REPLAY_SUPPORT_EXP,
+        sizeof(graph_supported), &graph_supported, nullptr));
+    ASSERT_TRUE(graph_supported);
+  }
+}
+
 TEST_P(urDeviceGetInfoTest, Success2DBlockArrayCapabilities) {
   size_t property_size = 0;
   const ur_device_info_t property_name =
