@@ -9,6 +9,7 @@
 
 #include "queue_immediate_out_of_order.hpp"
 #include "../common/latency_tracker.hpp"
+#include "../common/platform.hpp"
 #include "command_list_manager.hpp"
 #include "ur.hpp"
 
@@ -157,10 +158,18 @@ ur_result_t ur_queue_immediate_out_of_order_t::enqueueEventsWaitWithBarrier(
 }
 
 ur_result_t ur_queue_immediate_out_of_order_t::enqueueEventsWaitWithBarrierExt(
-    const ur_exp_enqueue_ext_properties_t *, uint32_t numEventsInWaitList,
-    const ur_event_handle_t *phEventWaitList, ur_event_handle_t *phEvent) {
+    const ur_exp_enqueue_ext_properties_t *pProperties,
+    uint32_t numEventsInWaitList, const ur_event_handle_t *phEventWaitList,
+    ur_event_handle_t *phEvent) {
   TRACK_SCOPE_LATENCY(
       "ur_queue_immediate_out_of_order_t::enqueueEventsWaitWithBarrierExt");
+
+  const bool graphExternal =
+      pProperties &&
+      (pProperties->flags & UR_EXP_ENQUEUE_EXT_FLAG_GRAPH_EXTERNAL);
+  if (graphExternal &&
+      !hDevice->Platform->isGraphExternalEventsSupported(hDevice))
+    return UR_RESULT_ERROR_UNSUPPORTED_FEATURE;
 
   if (phEvent && *phEvent && !(*phEvent)->isCounter())
     return UR_RESULT_ERROR_INVALID_ARGUMENT;
@@ -169,14 +178,28 @@ ur_result_t ur_queue_immediate_out_of_order_t::enqueueEventsWaitWithBarrierExt(
       wait_list_view(phEventWaitList, numEventsInWaitList);
 
   bool needsRealBarrier = (flags & UR_QUEUE_FLAG_PROFILING_ENABLE) != 0;
-  auto barrierFn = needsRealBarrier
-                       ? &ur_command_list_manager::appendEventsWaitWithBarrier
-                       : &ur_command_list_manager::appendEventsWait;
+  auto barrierFn = [needsRealBarrier](ur_command_list_manager &cmdListManager,
+                                      wait_list_view &waitList,
+                                      ur_event_handle_t hEvent) {
+    return needsRealBarrier
+               ? cmdListManager.appendEventsWaitWithBarrier(waitList, hEvent)
+               : cmdListManager.appendEventsWait(waitList, hEvent);
+  };
 
   auto commandListManagersLocked = commandListManagers.lock();
   bool captureActive = false;
   commandListManagersLocked[captureCmdListManagerIdx].queryGraphCaptureActive(
       &captureActive);
+  if (graphExternal) {
+    if (!captureActive)
+      return UR_RESULT_ERROR_COMMAND_LIST_NOT_CAPTURING;
+
+    // zeCommandListAppendBarrier takes no pNext, so a graph-external barrier
+    // always becomes a wait and a signal, also on profiling queues.
+    return commandListManagersLocked[captureCmdListManagerIdx].appendEventsWait(
+        waitListView,
+        createEventOrReuseIfRequested(eventPool.get(), phEvent, this), true);
+  }
   if (captureActive) {
     return std::invoke(
         barrierFn, commandListManagersLocked[captureCmdListManagerIdx],

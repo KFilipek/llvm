@@ -576,8 +576,16 @@ ur_result_t ur_queue_batched_t::enqueueEventsWaitWithBarrier(
 }
 
 ur_result_t ur_queue_batched_t::enqueueEventsWaitWithBarrierExt(
-    const ur_exp_enqueue_ext_properties_t *, uint32_t numEventsInWaitList,
-    const ur_event_handle_t *phEventWaitList, ur_event_handle_t *phEvent) {
+    const ur_exp_enqueue_ext_properties_t *pProperties,
+    uint32_t numEventsInWaitList, const ur_event_handle_t *phEventWaitList,
+    ur_event_handle_t *phEvent) {
+
+  const bool graphExternal =
+      pProperties &&
+      (pProperties->flags & UR_EXP_ENQUEUE_EXT_FLAG_GRAPH_EXTERNAL);
+  if (graphExternal &&
+      !hDevice->Platform->isGraphExternalEventsSupported(hDevice))
+    return UR_RESULT_ERROR_UNSUPPORTED_FEATURE;
 
   if (phEvent && *phEvent && !(*phEvent)->isCounter())
     return UR_RESULT_ERROR_INVALID_ARGUMENT;
@@ -586,6 +594,9 @@ ur_result_t ur_queue_batched_t::enqueueEventsWaitWithBarrierExt(
       wait_list_view(phEventWaitList, numEventsInWaitList, this);
 
   auto lockedBatch = currentCmdLists.lock();
+  if (graphExternal && !lockedBatch->isGraphCaptureActive())
+    return UR_RESULT_ERROR_COMMAND_LIST_NOT_CAPTURING;
+
   markIssuedCommandInBatch(lockedBatch);
 
   ur_event_handle_t event{};
@@ -599,7 +610,12 @@ ur_result_t ur_queue_batched_t::enqueueEventsWaitWithBarrierExt(
   if (!event)
     event = getEvent(lockedBatch, phEvent);
 
-  if (flags & UR_QUEUE_FLAG_PROFILING_ENABLE) {
+  if (graphExternal) {
+    // zeCommandListAppendBarrier takes no pNext, so a graph-external barrier
+    // always becomes a wait and a signal, also on profiling queues.
+    UR_CALL(lockedBatch->getListManager().appendEventsWait(waitListView, event,
+                                                           true));
+  } else if (flags & UR_QUEUE_FLAG_PROFILING_ENABLE) {
     UR_CALL(lockedBatch->getListManager().appendEventsWaitWithBarrier(
         waitListView, event));
   } else {

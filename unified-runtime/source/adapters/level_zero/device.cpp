@@ -23,6 +23,7 @@ ur_result_t urDeviceGetInfo(::ur_device_handle_t hDeviceOpque,
 
   switch (propName) {
   case UR_DEVICE_INFO_GRAPH_RECORD_AND_REPLAY_SUPPORT_EXP:
+  case UR_DEVICE_INFO_GRAPH_EXTERNAL_EVENTS_SUPPORT_EXP:
     return ReturnValue(false);
   case UR_DEVICE_INFO_ENQUEUE_HOST_TASK_SUPPORT_EXP:
     return ReturnValue(false);

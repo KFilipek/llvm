@@ -1086,11 +1086,32 @@ ze_command_list_handle_t ur_command_list_manager::getZeCommandList() {
 
 ur_result_t
 ur_command_list_manager::appendEventsWait(wait_list_view &waitListView,
-                                          ur_event_handle_t phEvent) {
+                                          ur_event_handle_t phEvent,
+                                          bool graphExternal) {
   TRACK_SCOPE_LATENCY("ur_command_list_manager::appendEventsWait");
 
   auto zeSignalEvent = getSignalEvent(phEvent, UR_COMMAND_EVENTS_WAIT);
   auto [pWaitEvents, numWaitEvents, _] = waitListView;
+
+  if (graphExternal) {
+    // Applies to the events of these two appends only.
+    ze_event_ext_flags_desc_t graphExternalDesc{
+        ZE_STRUCTURE_TYPE_EVENT_EXT_FLAGS_DESC, nullptr,
+        ZE_EVENT_EXT_FLAG_APPEND_GRAPH_EXTERNAL};
+
+    if (numWaitEvents > 0) {
+      ZE2UR_CALL(zeCommandListAppendWaitOnEventsWithParameters,
+                 (zeCommandList.get(), &graphExternalDesc, numWaitEvents,
+                  pWaitEvents));
+    }
+
+    if (zeSignalEvent) {
+      ZE2UR_CALL(zeCommandListAppendSignalEventWithParameters,
+                 (zeCommandList.get(), &graphExternalDesc, zeSignalEvent));
+    }
+
+    return UR_RESULT_SUCCESS;
+  }
 
   if (numWaitEvents > 0) {
     ZE2UR_CALL(zeCommandListAppendWaitOnEvents,

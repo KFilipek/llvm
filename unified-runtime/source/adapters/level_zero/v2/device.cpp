@@ -51,6 +51,15 @@ ur_result_t urDeviceGetInfo(::ur_device_handle_t hDeviceOpque,
     return ReturnValue(static_cast<ur_bool_t>(
         (GraphProperties.graphFlags & GraphModeMask) != 0));
   }
+  case UR_DEVICE_INFO_GRAPH_EXTERNAL_EVENTS_SUPPORT_EXP: {
+    ur_bool_t GraphSupported = false;
+    UR_CALL(ur::level_zero::v2::urDeviceGetInfo(
+        hDeviceOpque, UR_DEVICE_INFO_GRAPH_RECORD_AND_REPLAY_SUPPORT_EXP,
+        sizeof(GraphSupported), &GraphSupported, nullptr));
+    return ReturnValue(static_cast<ur_bool_t>(
+        GraphSupported &&
+        hDevice->Platform->isGraphExternalEventsSupported(hDevice)));
+  }
   case UR_DEVICE_INFO_ENQUEUE_HOST_TASK_SUPPORT_EXP:
     return ReturnValue(
         static_cast<ur_bool_t>(hDevice->Platform->ZeHostTaskExt.Supported));

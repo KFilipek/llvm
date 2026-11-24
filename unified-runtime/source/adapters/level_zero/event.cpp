@@ -192,6 +192,11 @@ ur_result_t urEnqueueEventsWaitWithBarrierExt(
     /// [in,out][optional] return an event object that identifies this
     /// particular command instance.
     ::ur_event_handle_t *OutEvent) {
+  // Graph-external events are not supported.
+  if (EnqueueExtProp &&
+      (EnqueueExtProp->flags & UR_EXP_ENQUEUE_EXT_FLAG_GRAPH_EXTERNAL))
+    return UR_RESULT_ERROR_UNSUPPORTED_FEATURE;
+
   auto Queue = v1_cast(QueueOpque);
   auto EventWaitListInternal = v1_cast(EventWaitList);
   auto OutEventInternal = v1_cast(OutEvent);

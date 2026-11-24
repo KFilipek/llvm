@@ -833,6 +833,87 @@ ur_result_t ur_platform_handle_t_::initialize() {
   return UR_RESULT_SUCCESS;
 }
 
+// Checks whether the driver accepts ze_event_ext_flags_desc_t as pNext of
+// zeCommandListAppendSignalEventWithParameters. Drivers that don't know the
+// descriptor reject it, like any unknown pNext structure, with
+// ZE_RESULT_ERROR_UNSUPPORTED_FEATURE, and a failed append during a graph
+// capture breaks that capture. So the descriptor is tried here first, on a
+// temporary immediate command list that is not capturing, and without flags,
+// because ZE_EVENT_EXT_FLAG_APPEND_GRAPH_EXTERNAL is only valid while
+// recording.
+static bool probeEventExtFlagsDesc(ze_driver_handle_t ZeDriver,
+                                   ur_device_handle_t Device) {
+  const int32_t Ordinal =
+      Device->QueueGroup[ur_device_handle_t_::queue_group_info_t::Compute]
+          .ZeOrdinal;
+  if (Ordinal < 0) {
+    return false;
+  }
+
+  ZeStruct<ze_context_desc_t> ContextDesc;
+  ZeStruct<ze_command_queue_desc_t> QueueDesc;
+  QueueDesc.ordinal = static_cast<uint32_t>(Ordinal);
+  QueueDesc.flags = ZE_COMMAND_QUEUE_FLAG_IN_ORDER;
+  QueueDesc.mode = ZE_COMMAND_QUEUE_MODE_ASYNCHRONOUS;
+  ze_event_counter_based_desc_t EventDesc{};
+  EventDesc.stype = ZE_STRUCTURE_TYPE_EVENT_COUNTER_BASED_DESC;
+  EventDesc.flags = ZE_EVENT_COUNTER_BASED_FLAG_IMMEDIATE |
+                    ZE_EVENT_COUNTER_BASED_FLAG_HOST_VISIBLE;
+  EventDesc.signal = ZE_EVENT_SCOPE_FLAG_HOST;
+
+  ze_context_handle_t ZeContext = nullptr;
+  ze_command_list_handle_t ZeCommandList = nullptr;
+  ze_event_handle_t ZeEvent = nullptr;
+  ze_result_t ZeResult = ZE_RESULT_ERROR_UNSUPPORTED_FEATURE;
+  if (ZE_CALL_NOCHECK(zeContextCreate, (ZeDriver, &ContextDesc, &ZeContext)) ==
+          ZE_RESULT_SUCCESS &&
+      ZE_CALL_NOCHECK(zeCommandListCreateImmediate,
+                      (ZeContext, Device->ZeDevice, &QueueDesc,
+                       &ZeCommandList)) == ZE_RESULT_SUCCESS &&
+      ZE_CALL_NOCHECK(zeEventCounterBasedCreate,
+                      (ZeContext, Device->ZeDevice, &EventDesc, &ZeEvent)) ==
+          ZE_RESULT_SUCCESS) {
+    ze_event_ext_flags_desc_t FlagsDesc{ZE_STRUCTURE_TYPE_EVENT_EXT_FLAGS_DESC,
+                                        nullptr, 0};
+    ZeResult = ZE_CALL_NOCHECK(zeCommandListAppendSignalEventWithParameters,
+                               (ZeCommandList, &FlagsDesc, ZeEvent));
+    if (ZeResult == ZE_RESULT_SUCCESS) {
+      ZE_CALL_NOCHECK(zeCommandListHostSynchronize,
+                      (ZeCommandList, UINT64_MAX));
+    }
+  }
+
+  if (ZeEvent) {
+    ZE_CALL_NOCHECK(zeEventDestroy, (ZeEvent));
+  }
+  if (ZeCommandList) {
+    ZE_CALL_NOCHECK(zeCommandListDestroy, (ZeCommandList));
+  }
+  if (ZeContext) {
+    ZE_CALL_NOCHECK(zeContextDestroy, (ZeContext));
+  }
+
+  UR_LOG(INFO,
+         "ze_event_ext_flags_desc_t probe returned 0x{}, graph-external "
+         "events are {}supported",
+         logger::toHex(ZeResult), ZeResult == ZE_RESULT_SUCCESS ? "" : "not ");
+  return ZeResult == ZE_RESULT_SUCCESS;
+}
+
+bool ur_platform_handle_t_::isGraphExternalEventsSupported(
+    ur_device_handle_t Device) {
+  // The probe needs the core counter-based event API (spec 1.15); a driver
+  // without it doesn't know the descriptor, which is newer, either.
+  if (!ZeGraphExt.Supported || !ZeCounterBasedEventsCoreApiSupported) {
+    return false;
+  }
+  std::call_once(ZeGraphExt.ExternalEventsProbed, [&] {
+    ZeGraphExt.ExternalEventsSupported =
+        probeEventExtFlagsDesc(ZeDriver, Device);
+  });
+  return ZeGraphExt.ExternalEventsSupported;
+}
+
 bool ur_platform_handle_t_::allowDriverInOrderLists(bool OnlyIfRequested) {
   // Use in-order lists implementation from L0 driver instead
   // of adapter's implementation.

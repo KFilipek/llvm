@@ -154,10 +154,18 @@ ur_result_t ur_queue_immediate_in_order_t::enqueueEventsWaitWithBarrier(
 }
 
 ur_result_t ur_queue_immediate_in_order_t::enqueueEventsWaitWithBarrierExt(
-    const ur_exp_enqueue_ext_properties_t *, uint32_t numEventsInWaitList,
-    const ur_event_handle_t *phEventWaitList, ur_event_handle_t *phEvent) {
+    const ur_exp_enqueue_ext_properties_t *pProperties,
+    uint32_t numEventsInWaitList, const ur_event_handle_t *phEventWaitList,
+    ur_event_handle_t *phEvent) {
   TRACK_SCOPE_LATENCY(
       "ur_queue_immediate_in_order_t::enqueueEventsWaitWithBarrierExt");
+
+  const bool graphExternal =
+      pProperties &&
+      (pProperties->flags & UR_EXP_ENQUEUE_EXT_FLAG_GRAPH_EXTERNAL);
+  if (graphExternal &&
+      !hDevice->Platform->isGraphExternalEventsSupported(hDevice))
+    return UR_RESULT_ERROR_UNSUPPORTED_FEATURE;
 
   wait_list_view waitListView =
       wait_list_view(phEventWaitList, numEventsInWaitList);
@@ -165,10 +173,22 @@ ur_result_t ur_queue_immediate_in_order_t::enqueueEventsWaitWithBarrierExt(
   if (phEvent && *phEvent && !(*phEvent)->isCounter())
     return UR_RESULT_ERROR_INVALID_ARGUMENT;
 
+  auto &&cmdListMan = commandListManager.lock();
+
+  if (graphExternal) {
+    bool captureActive = false;
+    UR_CALL(cmdListMan->queryGraphCaptureActive(&captureActive));
+    if (!captureActive)
+      return UR_RESULT_ERROR_COMMAND_LIST_NOT_CAPTURING;
+  }
+
   ur_event_handle_t event =
       createEventOrReuseIfRequested(eventPool.get(), phEvent, this);
 
-  auto &&cmdListMan = commandListManager.lock();
+  // zeCommandListAppendBarrier takes no pNext, so a graph-external barrier
+  // always becomes a wait and a signal, also on profiling queues.
+  if (graphExternal)
+    return cmdListMan->appendEventsWait(waitListView, event, true);
 
   if (flags & UR_QUEUE_FLAG_PROFILING_ENABLE)
     return cmdListMan->appendEventsWaitWithBarrier(waitListView, event);

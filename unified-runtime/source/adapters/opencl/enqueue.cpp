@@ -78,9 +78,14 @@ ur_result_t urEnqueueEventsWaitWithBarrier(
 }
 
 ur_result_t urEnqueueEventsWaitWithBarrierExt(
-    ur_queue_handle_t hQueue, const ur_exp_enqueue_ext_properties_t *,
+    ur_queue_handle_t hQueue,
+    const ur_exp_enqueue_ext_properties_t *pProperties,
     uint32_t numEventsInWaitList, const ur_event_handle_t *phEventWaitList,
     ur_event_handle_t *phEvent) {
+  // Graph-external events are not supported.
+  if (pProperties &&
+      (pProperties->flags & UR_EXP_ENQUEUE_EXT_FLAG_GRAPH_EXTERNAL))
+    return UR_RESULT_ERROR_UNSUPPORTED_FEATURE;
   return ur::opencl::urEnqueueEventsWaitWithBarrier(hQueue, numEventsInWaitList,
                                                     phEventWaitList, phEvent);
 }

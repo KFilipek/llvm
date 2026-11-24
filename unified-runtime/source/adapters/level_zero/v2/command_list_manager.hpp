@@ -64,8 +64,12 @@ struct ur_command_list_manager {
   ur_result_t releaseSubmittedKernels();
 
   /************ Generic queue methods *************/
+  // If graphExternal is set, the wait and signal are recorded as
+  // graph-external, see UR_EXP_ENQUEUE_EXT_FLAG_GRAPH_EXTERNAL. The command
+  // list must be capturing a graph.
   ur_result_t appendEventsWait(wait_list_view &waitListView,
-                               ur_event_handle_t phEvent);
+                               ur_event_handle_t phEvent,
+                               bool graphExternal = false);
   ur_result_t appendEventsWaitWithBarrier(wait_list_view &waitList,
                                           ur_event_handle_t phEvent);
   ur_result_t appendMemBufferRead(ur_mem_handle_t hBuffer, bool blockingRead,

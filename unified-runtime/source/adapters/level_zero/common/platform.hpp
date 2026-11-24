@@ -8,6 +8,8 @@
 //===----------------------------------------------------------------------===//
 #pragma once
 
+#include <mutex>
+
 #include "device.hpp"
 #include "interfaces.hpp"
 #include "unified-runtime/ur_api.h"
@@ -295,7 +297,17 @@ struct ur_platform_handle_t_ : ur::level_zero::ur_object_t, public ur_platform {
         return ZeResult;
       }
     }
+
+    // Whether the driver accepts ze_event_ext_flags_desc_t, which is used to
+    // record graph-external events. Set once by
+    // ur_platform_handle_t_::isGraphExternalEventsSupported().
+    bool ExternalEventsSupported = false;
+    std::once_flag ExternalEventsProbed;
   } ZeGraphExt;
+
+  // Returns whether graph-external events can be recorded, probing the driver
+  // with Device on the first call.
+  bool isGraphExternalEventsSupported(ur_device_handle_t Device);
 
   struct ZeHostTaskExtension {
     bool Supported = false;
