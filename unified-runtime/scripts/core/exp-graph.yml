@@ -29,6 +29,30 @@ etors:
       desc: |
             [$x_bool_t] Returns true if the device supports graph record and replay
             functionality.
+    - name: GRAPH_EXTERNAL_EVENTS_SUPPORT_EXP
+      value: "0x2081"
+      desc: |
+            [$x_bool_t] Returns true if the device supports recording graph-external
+            event waits and signals with $X_EXP_ENQUEUE_EXT_FLAG_GRAPH_EXTERNAL.
+--- #--------------------------------------------------------------------------
+type: enum
+extend: true
+desc: "Extension enums to $x_exp_enqueue_ext_flags_t to support graph-external events."
+name: $x_exp_enqueue_ext_flags_t
+etors:
+    - name: GRAPH_EXTERNAL
+      value: "$X_BIT(12)"
+      desc: >
+            Only valid for $xEnqueueEventsWaitWithBarrierExt while hQueue is in
+            graph capture mode. For this command only, the events in
+            phEventWaitList and the reusable event passed in *phEvent are
+            recorded as graph-external: when the graph is executed, the
+            command waits on events signaled outside of the graph and signals
+            *phEvent so that it can be waited on outside of the graph, for
+            example from the host. The event objects are not changed, so the
+            same event may be used as a graph-internal event by other recorded
+            commands. The graph keeps referring to these events, so the
+            lifetime rule described for $X_EXP_EVENT_FLAG_UNPOOLED applies.
 --- #--------------------------------------------------------------------------
 type: enum
 extend: true

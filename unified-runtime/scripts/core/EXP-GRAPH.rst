@@ -34,6 +34,9 @@ Enums
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 * ${x}_device_info_t
     * ${X}_DEVICE_INFO_GRAPH_RECORD_AND_REPLAY_SUPPORT_EXP
+    * ${X}_DEVICE_INFO_GRAPH_EXTERNAL_EVENTS_SUPPORT_EXP
+* ${x}_exp_enqueue_ext_flags_t
+    * ${X}_EXP_ENQUEUE_EXT_FLAG_GRAPH_EXTERNAL
 
 Functions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -53,6 +56,30 @@ Functions
    * ${x}QueueGetGraphExp
    * ${x}EnqueueGraphExp
 
+Graph-External Events
+--------------------------------------------------------------------------------
+
+Events signaled by recorded commands are internal to the graph. To synchronize
+a graph with work outside of it, for example to wait on the host for a point in
+the graph, or to make the graph wait on work submitted to another queue, pass
+${X}_EXP_ENQUEUE_EXT_FLAG_GRAPH_EXTERNAL in the properties of
+${x}EnqueueEventsWaitWithBarrierExt while the queue is in graph capture mode.
+For that command only, the events in ``phEventWaitList`` and the reusable
+event passed in ``*phEvent`` are recorded as graph-external: each time the
+graph is executed, the command waits on events signaled outside of the graph
+and signals ``*phEvent`` so that it can be waited on outside of the graph.
+
+The flag applies to this one command, not to the event objects, so the same
+event may be used as a graph-internal event by other recorded commands. The
+graph keeps referring to the events recorded this way, so the lifetime rule
+described for ${X}_EXP_EVENT_FLAG_UNPOOLED applies to them.
+
+The flag is only supported if the device reports
+${X}_DEVICE_INFO_GRAPH_EXTERNAL_EVENTS_SUPPORT_EXP as true, otherwise
+${x}EnqueueEventsWaitWithBarrierExt returns
+${X}_RESULT_ERROR_UNSUPPORTED_FEATURE. If the queue is not in graph capture
+mode, it returns ${X}_RESULT_ERROR_COMMAND_LIST_NOT_CAPTURING.
+
 Error Codes
 --------------------------------------------------------------------------------
 
@@ -71,7 +98,9 @@ capture mode.
   used outside of that graph after the capture ended, or a command recorded
   into a graph waited on an event signaled outside of it.
 * ${X}_RESULT_ERROR_COMMAND_LIST_NOT_CAPTURING - ${x}QueueEndGraphCaptureExp was
-  called on a queue that is not in graph capture mode.
+  called on a queue that is not in graph capture mode, or
+  ${X}_EXP_ENQUEUE_EXT_FLAG_GRAPH_EXTERNAL was passed to
+  ${x}EnqueueEventsWaitWithBarrierExt on such a queue.
 * ${X}_RESULT_ERROR_GRAPH_UNJOINED_FORKS - ${x}QueueEndGraphCaptureExp was called
   while a forked queue was not joined back.
 * ${X}_RESULT_ERROR_INVALID_GRAPH - an invalid graph, such as one whose capture
@@ -108,12 +137,20 @@ Changelog
 | 1.6       | Document when graph capture error codes are |
 |           | returned.                                   |
 +-----------+---------------------------------------------+
+| 1.7       | Add graph-external events: the              |
+|           | ${X}_EXP_ENQUEUE_EXT_FLAG_GRAPH_EXTERNAL    |
+|           | enqueue flag and a device info to query     |
+|           | support for it.                             |
++-----------+---------------------------------------------+
 
 Support
 --------------------------------------------------------------------------------
 
 Adapters which support this experimental feature *must* return true for the new
 ``${X}_DEVICE_INFO_GRAPH_RECORD_AND_REPLAY_SUPPORT_EXP`` device info query.
+
+Adapters which also support graph-external events *must* return true for the
+``${X}_DEVICE_INFO_GRAPH_EXTERNAL_EVENTS_SUPPORT_EXP`` device info query.
 
 Contributors
 --------------------------------------------------------------------------------
