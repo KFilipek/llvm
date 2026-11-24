@@ -2587,6 +2587,9 @@ typedef enum ur_device_info_t {
   /// [::ur_bool_t] Returns true if the device supports graph record and replay
   /// functionality.
   UR_DEVICE_INFO_GRAPH_RECORD_AND_REPLAY_SUPPORT_EXP = 0x2080,
+  /// [::ur_bool_t] Returns true if the device supports recording graph-external
+  /// event waits and signals with ::UR_EXP_ENQUEUE_EXT_FLAG_GRAPH_EXTERNAL.
+  UR_DEVICE_INFO_GRAPH_EXTERNAL_EVENTS_SUPPORT_EXP = 0x2081,
   /// [::ur_bool_t] returns true if the device supports registering host
   /// memory ranges.
   UR_DEVICE_INFO_USM_HOST_ALLOC_REGISTER_SUPPORT_EXP = 0x2090,
@@ -13902,13 +13905,24 @@ typedef enum ur_exp_enqueue_ext_flag_t {
   /// utilization at the cost of increased event completion latency. Other
   /// platforms may ignore this flag.
   UR_EXP_ENQUEUE_EXT_FLAG_LOW_POWER_EVENTS_SUPPORT = UR_BIT(11),
+  /// Only valid for ::urEnqueueEventsWaitWithBarrierExt while hQueue is in
+  /// graph capture mode. For this command only, the events in
+  /// phEventWaitList and the reusable event passed in *phEvent are recorded
+  /// as graph-external: when the graph is executed, the command waits on
+  /// events signaled outside of the graph and signals *phEvent so that it
+  /// can be waited on outside of the graph, for example from the host. The
+  /// event objects are not changed, so the same event may be used as a
+  /// graph-internal event by other recorded commands. The graph keeps
+  /// referring to these events, so the lifetime rule described for
+  /// ::UR_EXP_EVENT_FLAG_UNPOOLED applies.
+  UR_EXP_ENQUEUE_EXT_FLAG_GRAPH_EXTERNAL = UR_BIT(12),
   /// @cond
   UR_EXP_ENQUEUE_EXT_FLAG_FORCE_UINT32 = 0x7fffffff
   /// @endcond
 
 } ur_exp_enqueue_ext_flag_t;
 /// @brief Bit Mask for validating ur_exp_enqueue_ext_flags_t
-#define UR_EXP_ENQUEUE_EXT_FLAGS_MASK 0xfffff7ff
+#define UR_EXP_ENQUEUE_EXT_FLAGS_MASK 0xffffe7ff
 
 ///////////////////////////////////////////////////////////////////////////////
 /// @brief Extended enqueue properties
@@ -13959,6 +13973,13 @@ typedef struct ur_exp_enqueue_ext_properties_t {
 ///     - ::UR_RESULT_ERROR_INVALID_VALUE
 ///     - ::UR_RESULT_ERROR_OUT_OF_HOST_MEMORY
 ///     - ::UR_RESULT_ERROR_OUT_OF_RESOURCES
+///     - ::UR_RESULT_ERROR_UNSUPPORTED_FEATURE
+///         + `pProperties->flags` has ::UR_EXP_ENQUEUE_EXT_FLAG_GRAPH_EXTERNAL
+///         set and the device associated with `hQueue` reports
+///         ::UR_DEVICE_INFO_GRAPH_EXTERNAL_EVENTS_SUPPORT_EXP as false.
+///     - ::UR_RESULT_ERROR_COMMAND_LIST_NOT_CAPTURING
+///         + `pProperties->flags` has ::UR_EXP_ENQUEUE_EXT_FLAG_GRAPH_EXTERNAL
+///         set and `hQueue` is not in graph capture mode.
 UR_APIEXPORT ur_result_t UR_APICALL urEnqueueEventsWaitWithBarrierExt(
     /// [in] handle of the queue object
     ur_queue_handle_t hQueue,

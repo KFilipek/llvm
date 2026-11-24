@@ -3472,6 +3472,9 @@ inline std::ostream &operator<<(std::ostream &os, enum ur_device_info_t value) {
   case UR_DEVICE_INFO_GRAPH_RECORD_AND_REPLAY_SUPPORT_EXP:
     os << "UR_DEVICE_INFO_GRAPH_RECORD_AND_REPLAY_SUPPORT_EXP";
     break;
+  case UR_DEVICE_INFO_GRAPH_EXTERNAL_EVENTS_SUPPORT_EXP:
+    os << "UR_DEVICE_INFO_GRAPH_EXTERNAL_EVENTS_SUPPORT_EXP";
+    break;
   case UR_DEVICE_INFO_USM_HOST_ALLOC_REGISTER_SUPPORT_EXP:
     os << "UR_DEVICE_INFO_USM_HOST_ALLOC_REGISTER_SUPPORT_EXP";
     break;
@@ -5896,6 +5899,19 @@ inline ur_result_t printTagged(std::ostream &os, const void *ptr,
     os << ")";
   } break;
   case UR_DEVICE_INFO_GRAPH_RECORD_AND_REPLAY_SUPPORT_EXP: {
+    const ur_bool_t *tptr = (const ur_bool_t *)ptr;
+    if (sizeof(ur_bool_t) > size) {
+      os << "invalid size (is: " << size
+         << ", expected: >=" << sizeof(ur_bool_t) << ")";
+      return UR_RESULT_ERROR_INVALID_SIZE;
+    }
+    os << (const void *)(tptr) << " (";
+
+    os << *tptr;
+
+    os << ")";
+  } break;
+  case UR_DEVICE_INFO_GRAPH_EXTERNAL_EVENTS_SUPPORT_EXP: {
     const ur_bool_t *tptr = (const ur_bool_t *)ptr;
     if (sizeof(ur_bool_t) > size) {
       os << "invalid size (is: " << size
@@ -13599,6 +13615,9 @@ inline std::ostream &operator<<(std::ostream &os,
   case UR_EXP_ENQUEUE_EXT_FLAG_LOW_POWER_EVENTS_SUPPORT:
     os << "UR_EXP_ENQUEUE_EXT_FLAG_LOW_POWER_EVENTS_SUPPORT";
     break;
+  case UR_EXP_ENQUEUE_EXT_FLAG_GRAPH_EXTERNAL:
+    os << "UR_EXP_ENQUEUE_EXT_FLAG_GRAPH_EXTERNAL";
+    break;
   default:
     os << "unknown enumerator";
     break;
@@ -13624,6 +13643,17 @@ inline ur_result_t printFlag<ur_exp_enqueue_ext_flag_t>(std::ostream &os,
       first = false;
     }
     os << UR_EXP_ENQUEUE_EXT_FLAG_LOW_POWER_EVENTS_SUPPORT;
+  }
+
+  if ((val & UR_EXP_ENQUEUE_EXT_FLAG_GRAPH_EXTERNAL) ==
+      (uint32_t)UR_EXP_ENQUEUE_EXT_FLAG_GRAPH_EXTERNAL) {
+    val ^= (uint32_t)UR_EXP_ENQUEUE_EXT_FLAG_GRAPH_EXTERNAL;
+    if (!first) {
+      os << " | ";
+    } else {
+      first = false;
+    }
+    os << UR_EXP_ENQUEUE_EXT_FLAG_GRAPH_EXTERNAL;
   }
   if (val != 0) {
     std::bitset<32> bits(val);

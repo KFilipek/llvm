@@ -11257,6 +11257,13 @@ ur_result_t UR_APICALL urEnqueueHostTaskExp(
 ///     - ::UR_RESULT_ERROR_INVALID_VALUE
 ///     - ::UR_RESULT_ERROR_OUT_OF_HOST_MEMORY
 ///     - ::UR_RESULT_ERROR_OUT_OF_RESOURCES
+///     - ::UR_RESULT_ERROR_UNSUPPORTED_FEATURE
+///         + `pProperties->flags` has ::UR_EXP_ENQUEUE_EXT_FLAG_GRAPH_EXTERNAL
+///         set and the device associated with `hQueue` reports
+///         ::UR_DEVICE_INFO_GRAPH_EXTERNAL_EVENTS_SUPPORT_EXP as false.
+///     - ::UR_RESULT_ERROR_COMMAND_LIST_NOT_CAPTURING
+///         + `pProperties->flags` has ::UR_EXP_ENQUEUE_EXT_FLAG_GRAPH_EXTERNAL
+///         set and `hQueue` is not in graph capture mode.
 ur_result_t UR_APICALL urEnqueueEventsWaitWithBarrierExt(
     /// [in] handle of the queue object
     ur_queue_handle_t hQueue,
